@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Monopoli Edukasi Interaktif - Kelas 1-6 SD</title>
+    <!-- Favicon Icon -->
+    <link rel="icon" type="image/png" href="https://iili.io/By8FQ7s.png">
+    <link rel="apple-touch-icon" href="https://iili.io/By8FQ7s.png">
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for winning celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-app: #0f172a;
+            --text-app: #f8fafc;
+            --panel-bg: rgba(30, 41, 59, 0.85);
+            --panel-border: #334155;
+            --board-bg: #1e293b;
+            --board-center: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+            --tile-bg: #1e293b;
+            --tile-border: #334155;
+            --tile-text: #f8fafc;
+            --inner-box: rgba(15, 23, 42, 0.8);
+        }
+
+        .light-theme {
+            --bg-app: #f1f5f9;
+            --text-app: #0f172a;
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            --panel-border: #cbd5e1;
+            --board-bg: #e2e8f0;
+            --board-center: radial-gradient(circle, #ffffff 0%, #f1f5f9 100%);
+            --tile-bg: #ffffff;
+            --tile-border: #cbd5e1;
+            --tile-text: #0f172a;
+            --inner-box: rgba(241, 245, 249, 0.9);
+        }
+
+        html, body {
+            min-height: 100%;
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-app);
+            color: var(--text-app);
+            user-select: none;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .font-heading {
+            font-family: 'Fredoka', cursive;
+        }
+
+        /* Responsive Container for 75" Smartboards and Large Screens */
+        .app-container {
+            width: 100%;
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+
+        /* Dynamic Panel Adaptations */
+        .theme-panel {
+            background-color: var(--panel-bg);
+            border-color: var(--panel-border);
+            color: var(--text-app);
+        }
+
+        .theme-inner {
+            background-color: var(--inner-box);
+            border-color: var(--panel-border);
+        }
+
+        /* 40-Tile Full Monopoly Board Layout Grid (11x11) */
+        .monopoly-board {
+            display: grid;
+            grid-template-columns: 1.8fr repeat(9, 1fr) 1.8fr;
+            grid-template-rows: 1.8fr repeat(9, 1fr) 1.8fr;
+            aspect-ratio: 1 / 1;
+            width: 100%;
+            max-width: min(88vh, 850px);
+            margin: 0 auto;
+            background-color: var(--board-bg);
+            border: clamp(3px, 0.4vw, 8px) solid var(--panel-border);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+            border-radius: clamp(0.5rem, 1.2vw, 1.5rem);
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .board-center {
+            grid-column: 2 / 11;
+            grid-row: 2 / 11;
+            background: var(--board-center);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: clamp(0.5rem, 1.2vw, 1.5rem);
+            position: relative;
+        }
+
+        /* Individual Board Tile Styling with Dynamic Scaling */
+        .tile {
+            border: 1px solid var(--tile-border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            font-size: clamp(0.45rem, 0.65vw, 0.85rem);
+            text-align: center;
+            position: relative;
+            background-color: var(--tile-bg);
+            color: var(--tile-text);
+            transition: all 0.2s ease;
+            overflow: hidden;
+            padding: 1px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .tile:hover {
+            filter: brightness(1.15);
+            z-index: 10;
+        }
+
+        /* Category Color Strip Header */
+        .tile-header {
+            width: 100%;
+            padding: clamp(1px, 0.2vw, 3px) 1px;
+            font-size: clamp(0.4rem, 0.55vw, 0.75rem);
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Animated Person Player Tokens */
+        .player-token {
+            width: clamp(20px, 2.2vw, 36px);
+            height: clamp(20px, 2.2vw, 36px);
+            border-radius: 50%;
+            border: clamp(1.5px, 0.2vw, 3px) solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            position: absolute;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(10px, 1.1vw, 20px);
+            color: white;
+            font-weight: bold;
+            background: #3b82f6;
+        }
+
+        .token-0 { background: linear-gradient(135deg, #ef4444, #991b1b); border-color: #fca5a5; }
+        .token-1 { background: linear-gradient(135deg, #3b82f6, #1e40af); border-color: #93c5fd; }
+        .token-2 { background: linear-gradient(135deg, #10b981, #065f46); border-color: #6ee7b7; }
+        .token-3 { background: linear-gradient(135deg, #f59e0b, #92400e); border-color: #fde68a; }
+        .token-4 { background: linear-gradient(135deg, #a855f7, #6b21a8); border-color: #e9d5ff; }
+
+        /* Jump Animation Class */
+        @keyframes hopBounce {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-22px) scale(1.35) rotate(-5deg); }
+            100% { transform: translateY(0) scale(1); }
+        }
+
+        .token-hopping {
+            animation: hopBounce 0.25s ease-in-out infinite;
+            z-index: 50 !important;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-app); }
+        ::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 4px; }
+
+        /* Dice Rolling Animation */
+        @keyframes rollAnimation {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(120deg) scale(1.2); }
+            50% { transform: rotate(240deg) scale(0.85); }
+            75% { transform: rotate(330deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        .rolling {
+            animation: rollAnimation 0.5s ease-in-out infinite;
+        }
+
+        .pulse-glow {
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.95); }
+        }
+
+        /* 75-inch Board Typography Scale Enhancements */
+        @media (min-width: 1900px) {
+            body { font-size: 1.15rem; }
+            .tile { font-size: 0.85rem; }
+            .tile-header { font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-2 sm:p-4 lg:p-6">
+
+    <div class="app-container flex flex-col justify-between h-full min-h-screen">
+        <!-- Top Navigation Header -->
+        <header class="w-full mx-auto flex flex-wrap justify-between items-center theme-panel backdrop-blur-md p-3 sm:p-4 lg:p-5 rounded-2xl border shadow-xl mb-3 gap-3">
+            <div class="flex items-center gap-3">
+                <!-- Custom Game Logo Image with Fallback Icon -->
+                <div class="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-1.5 shadow-lg shrink-0 overflow-hidden border border-indigo-400/30">
+                    <img src="https://iili.io/By8FQ7s.png" alt="Edupoly Logo" class="w-full h-full object-contain" onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                    <i class="fa-solid fa-graduation-cap text-white text-xl sm:text-2xl lg:text-3xl font-bold hidden"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-heading text-lg sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                            EDUPOLY SD
+                        </h1>
+                        <span id="header-grade-badge" class="bg-indigo-500/20 text-indigo-500 dark:text-indigo-300 border border-indigo-500/40 text-[10px] sm:text-xs lg:text-sm px-2.5 py-0.5 rounded-full font-bold">
+                            Kelas 4 SD
+                        </span>
+                    </div>
+                    <p class="text-[11px] sm:text-xs lg:text-sm text-slate-500 dark:text-slate-400 hidden sm:block">Monopoli Edukasi SD Interaktif (PAI, IPS, PJOK, MTK, IPA, Bahasa, Seni, Informatika)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Mode Terang / Gelap Switcher Button -->
+                <button id="theme-toggle-btn" onclick="toggleThemeMode()" class="p-2 sm:px-3 sm:py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-xl border border-slate-300 dark:border-slate-600 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition" title="Ganti Mode Terang / Gelap">
+                    <i id="theme-toggle-icon" class="fa-solid fa-moon text-amber-500 dark:text-amber-300"></i>
+                    <span id="theme-toggle-text" class="hidden md:inline">Mode Gelap</span>
+                </button>
+
+                <button onclick="toggleFullScreen()" class="p-2 sm:px-3 sm:py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-xl border border-slate-300 dark:border-slate-600 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition" title="Layar Penuh / Board Mode">
+                    <i id="fullscreen-icon" class="fa-solid fa-expand text-indigo-500 dark:text-indigo-400"></i>
+                    <span class="hidden md:inline">Layar Penuh</span>
+                </button>
+                <button id="sound-btn" onclick="toggleSound()" class="p-2 sm:px-3 sm:py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-xl border border-slate-300 dark:border-slate-600 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-emerald-500 dark:text-emerald-400"></i>
+                    <span class="hidden md:inline">Suara</span>
+                </button>
+                <button onclick="showInstructionModal()" class="p-2 sm:px-3 sm:py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-xl border border-slate-300 dark:border-slate-600 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-circle-question text-amber-500 dark:text-amber-400"></i>
+                    <span class="hidden md:inline">Panduan</span>
+                </button>
+                <button onclick="showSetupModal()" class="p-2 sm:px-3.5 sm:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl border border-indigo-400 text-xs sm:text-sm font-semibold flex items-center gap-2 transition shadow-lg">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Atur Game & Guru</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Game Section -->
+        <main class="w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 items-start flex-1">
+            
+            <!-- Left Dashboard: Player Status Card & External Game Log -->
+            <div class="lg:col-span-3 space-y-3 sm:space-y-4 order-2 lg:order-1">
+                <!-- Player Stats Box -->
+                <div class="theme-panel border rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
+                        <h2 class="font-heading text-sm sm:text-base lg:text-lg font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-users text-indigo-500 dark:text-indigo-400"></i> Daftar Pemain
+                        </h2>
+                        <span id="player-count-indicator" class="text-[10px] sm:text-xs bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold px-2 py-0.5 rounded-full">
+                            4 Pemain
+                        </span>
+                    </div>
+
+                    <!-- Dynamic Player Cards Container -->
+                    <div id="players-cards-container" class="space-y-2.5 max-h-[220px] lg:max-h-[280px] overflow-y-auto pr-1">
+                        <!-- Cards injected dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Action Log Sidebar (Outside Monopoly Board) -->
+                <div class="theme-panel border rounded-2xl p-3.5 shadow-xl space-y-2">
+                    <div class="font-bold text-xs sm:text-sm flex items-center justify-between border-b border-slate-200 dark:border-slate-700/60 pb-1.5 font-heading">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-amber-500 dark:text-amber-400"></i> Catatan Permainan
+                        </span>
+                        <i class="fa-solid fa-list-ul text-slate-400 text-xs"></i>
+                    </div>
+                    <div id="game-log" class="h-28 sm:h-36 overflow-y-auto space-y-1.5 text-[10px] sm:text-[11px] font-mono leading-tight theme-inner rounded-xl p-2.5 border border-slate-200 dark:border-slate-700/50">
+                        <div class="text-emerald-500 dark:text-emerald-400"> Permainan siap! Selamat bermain dan belajar.</div>
+                    </div>
+                </div>
+
+                <!-- Subject Badges Map -->
+                <div class="theme-panel border rounded-2xl p-3.5 shadow-xl space-y-2">
+                    <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700/60 pb-1.5">
+                        <h3 class="font-heading text-xs sm:text-sm font-bold">Mata Pelajaran Aktif</h3>
+                        <span id="active-subject-count" class="text-[10px] bg-indigo-500/20 text-indigo-500 dark:text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold">8 Ditampilkan</span>
+                    </div>
+                    <div id="active-subjects-badge-container" class="grid grid-cols-2 gap-1.5 text-[11px] sm:text-xs">
+                        <!-- Badges injected dynamically via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: Interactive Monopoly Board (40 Tiles) -->
+            <div class="lg:col-span-6 order-1 lg:order-2 flex justify-center w-full">
+                <div id="monopoly-board" class="monopoly-board shadow-2xl">
+                    <!-- 40 Tiles generated dynamically via JS -->
+
+                    <!-- Center Area of Board -->
+                    <div class="board-center justify-center gap-4 sm:gap-6">
+                        <!-- Title & Active Grade Badge with Custom Logo -->
+                        <div class="text-center flex flex-col items-center">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 mb-1 drop-shadow-md">
+                                <img src="https://iili.io/By8FQ7s.png" alt="Edupoly Logo" class="w-full h-full object-contain" onerror="this.onerror=null; this.style.display='none';">
+                            </div>
+                            <span class="bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
+                                Media Pembelajaran Smartboard
+                            </span>
+                            <h3 class="font-heading text-2xl sm:text-3xl lg:text-4xl font-black tracking-wide mt-1">EDUPOLY</h3>
+                            <p id="center-grade-title" class="text-xs sm:text-sm font-bold text-amber-500 dark:text-amber-400">Tingkat SD: Kelas 4</p>
+                        </div>
+
+                        <!-- Dice & Control Panel -->
+                        <div class="flex flex-col items-center space-y-3 sm:space-y-4">
+                            <div class="flex items-center justify-center gap-3">
+                                <div id="dice-display" class="w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 theme-inner border-2 rounded-2xl flex items-center justify-center text-3xl sm:text-5xl lg:text-6xl font-bold shadow-xl">
+                                    🎲
+                                </div>
+                            </div>
+
+                            <div id="dice-result-text" class="text-xs sm:text-sm lg:text-base font-bold text-indigo-600 dark:text-indigo-300 text-center min-h-[24px]">
+                                Tekan tombol untuk melempar dadu!
+                            </div>
+
+                            <button id="roll-btn" onclick="humanRollDice()" class="px-6 py-3 sm:px-10 sm:py-4 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:from-indigo-600 hover:to-pink-700 active:scale-95 text-white font-bold rounded-xl sm:rounded-2xl shadow-xl transition duration-200 flex items-center gap-2 text-sm sm:text-lg lg:text-xl pulse-glow">
+                                <i class="fa-solid fa-dice text-lg sm:text-2xl"></i> Lempar Dadu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Dashboard: Quiz Analytics & Victory Status -->
+            <div class="lg:col-span-3 space-y-3 sm:space-y-4 order-3">
+                <!-- Learning Score Analytics -->
+                <div class="theme-panel border rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-3">
+                    <h2 class="font-heading text-sm sm:text-base lg:text-lg font-bold border-b border-slate-200 dark:border-slate-700 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-emerald-500 dark:text-emerald-400"></i> Performa Kuis
+                    </h2>
+
+                    <div class="space-y-2">
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-slate-500 dark:text-slate-400">Akurasi Jawaban Anda</span>
+                                <span id="accuracy-text" class="text-indigo-500 dark:text-indigo-400 font-bold">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                                <div id="accuracy-bar" class="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full w-0 transition-all duration-300"></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 pt-2">
+                            <div class="theme-inner p-2 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
+                                <div class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Jawaban Benar</div>
+                                <div id="stats-correct" class="text-base sm:text-lg lg:text-xl font-bold text-emerald-500 dark:text-emerald-400 font-heading">0</div>
+                            </div>
+                            <div class="theme-inner p-2 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
+                                <div class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Jawaban Salah</div>
+                                <div id="stats-wrong" class="text-base sm:text-lg lg:text-xl font-bold text-rose-500 dark:text-rose-400 font-heading">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Target Victory Status Box -->
+                <div class="theme-panel border rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-3">
+                    <h3 class="font-heading text-xs sm:text-sm lg:text-base font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-amber-500 dark:text-amber-400"></i> Syarat Kemenangan
+                    </h3>
+                    <div class="theme-inner p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/50 space-y-1.5 text-xs">
+                        <div class="flex justify-between items-center">
+                            <span>Target Koin Edu:</span>
+                            <span class="font-bold text-amber-500 dark:text-amber-400">🪙 3,000</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span>Atau Kepemilikan Pos:</span>
+                            <span class="font-bold text-indigo-500 dark:text-indigo-400">12 Pos Edukasi</span>
+                        </div>
+                    </div>
+                    <button onclick="checkTargetWinner(true)" class="w-full py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 font-bold rounded-xl text-xs transition">
+                        🏆 Akhiri Game & Lihat Pemenang
+                    </button>
+                </div>
+
+                <!-- Quiz Streaks & Badges -->
+                <div class="theme-panel border rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-2.5">
+                    <h3 class="font-heading text-xs sm:text-sm lg:text-base font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-award text-amber-500 dark:text-amber-400"></i> Lencana Prestasi
+                    </h3>
+                    <div id="badges-container" class="flex flex-wrap gap-1.5">
+                        <span id="badge-star" class="text-[10px] sm:text-[11px] theme-inner text-slate-400 px-2.5 py-1 rounded-lg border flex items-center gap-1">
+                            🔒 Bintang Pelajar
+                        </span>
+                        <span id="badge-expert" class="text-[10px] sm:text-[11px] theme-inner text-slate-400 px-2.5 py-1 rounded-lg border flex items-center gap-1">
+                            🔒 Pakar Sains & Agama
+                        </span>
+                        <span id="badge-champion" class="text-[10px] sm:text-[11px] theme-inner text-slate-400 px-2.5 py-1 rounded-lg border flex items-center gap-1">
+                            🔒 Juara Umum SD
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-4 text-center text-[10px] sm:text-xs text-slate-500 py-2">
+            Monopoli Edukasi SD Interaktif &copy; 2026 - Pembelajaran Berbasis Permainan (Kelas 1 - Kelas 6 SD)
+        </footer>
+    </div>
+
+    <!-- MODALS SECTION -->
+    <!-- MODAL 1: Quiz Modal -->
+    <div id="quiz-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="theme-panel border rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative overflow-hidden">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-2">
+                    <span id="quiz-category" class="px-3 py-1 bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
+                        Mata Pelajaran
+                    </span>
+                    <span id="quiz-grade-label" class="px-2.5 py-1 bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 rounded-full text-xs font-bold">
+                        Kelas 4 SD
+                    </span>
+                </div>
+                <span id="quiz-timer" class="text-xs font-mono font-bold text-amber-500 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
+                    ⏱️ 25s
+                </span>
+            </div>
+
+            <div class="my-4">
+                <h3 id="quiz-question" class="text-sm sm:text-base lg:text-lg font-bold mb-4 leading-snug">
+                    Pertanyaan Kuis...
+                </h3>
+
+                <div id="quiz-options" class="space-y-2.5">
+                    <!-- Options injected dynamically -->
+                </div>
+            </div>
+
+            <div id="quiz-feedback" class="hidden p-3 rounded-xl text-xs font-bold text-center mt-3"></div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Property Purchase Modal -->
+    <div id="buy-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="theme-panel border rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl text-center space-y-4">
+            <div class="w-14 h-14 sm:w-16 sm:h-16 bg-indigo-500/20 text-indigo-500 dark:text-indigo-400 border border-indigo-500/30 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl mx-auto">
+                <i id="buy-icon" class="fa-solid fa-school"></i>
+            </div>
+            <div>
+                <h3 id="buy-title" class="text-lg sm:text-xl font-bold font-heading">Pos Edukasi</h3>
+                <p id="buy-desc" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Jawab pertanyaan kuis dengan benar untuk memiliki Pos Edukasi ini!</p>
+            </div>
+
+            <div class="theme-inner p-3 rounded-xl border border-slate-200 dark:border-slate-700/50 space-y-2 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-500 dark:text-slate-400">Harga Beli Pos:</span>
+                    <span id="buy-price" class="font-bold text-amber-500 dark:text-amber-400">🪙 200</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500 dark:text-slate-400">Sewa Dasar:</span>
+                    <span id="buy-rent" class="font-bold text-emerald-500 dark:text-emerald-400">🪙 20</span>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button onclick="confirmBuyProperty()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs sm:text-sm transition">
+                    Jawab Kuis & Beli
+                </button>
+                <button onclick="closeBuyModal()" class="flex-1 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs sm:text-sm transition">
+                    Lewati Pos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Instructions Modal -->
+    <div id="instruction-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="theme-panel border rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-3">
+                <h3 class="font-heading text-base sm:text-lg font-bold text-indigo-500 dark:text-indigo-400 flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i> Panduan Edupoly SD
+                </h3>
+                <button onclick="closeInstructionModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm leading-relaxed">
+                <div class="theme-inner p-3 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                    <h4 class="font-bold text-amber-500 dark:text-amber-400 mb-1">🎯 Tujuan Utama</h4>
+                    <p>Kumpulkan Koin Edu sebanyak-banyaknya dengan menjawab kuis mata pelajaran SD (PAI, IPS, PJOK, MTK, IPA, Bahasa, dll.) sesuai dengan tingkatan kelas yang Anda pilih!</p>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold text-indigo-500 dark:text-indigo-300">📌 Aturan Permainan:</h4>
+                    <ul class="list-disc list-inside space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                        <li><b class="text-slate-700 dark:text-slate-200">Pos Edukasi:</b> Jika hinggap di pos kosong, Anda bisa menjawab kuis untuk membelinya. Jika hinggap di pos milik pemain lain, Anda membayar sewa!</li>
+                        <li><b class="text-slate-700 dark:text-slate-200">Kuis Kaget & Ujian:</b> Petak khusus berhadiah koin Beasiswa tambahan.</li>
+                        <li><b class="text-slate-700 dark:text-slate-200">Ruang BK (Penjara):</b> Terjebak selama 1 putaran atau bayar denda koin untuk bebas.</li>
+                        <li><b class="text-slate-700 dark:text-slate-200">START (Beasiswa):</b> Mendapat Beasiswa 200 Koin Edu setiap kali melewati garis START.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="closeInstructionModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition">
+                Saya Mengerti, Ayo Bermain!
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Player Setup & Grade Level Selection Modal -->
+    <div id="setup-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="theme-panel border rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <div class="text-center">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center p-2 mx-auto mb-2 shadow-lg border border-indigo-400/40">
+                    <img src="https://iili.io/By8FQ7s.png" alt="Edupoly Logo" class="w-full h-full object-contain" onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                    <i class="fa-solid fa-sliders text-2xl text-white hidden"></i>
+                </div>
+                <h2 class="font-heading text-xl sm:text-2xl font-bold">Pengaturan Game & Mode Guru</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Atur Tingkat Kelas, Mata Pelajaran, dan Pemain (2 Sampai 5 Pemain)</p>
+            </div>
+
+            <!-- Grade Selection -->
+            <div class="theme-inner p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/60 space-y-2">
+                <label class="block text-xs font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider">1. Pilih Tingkat Kelas SD:</label>
+                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    <button type="button" onclick="selectGrade(1)" id="btn-grade-1" class="grade-btn py-2 bg-slate-200 dark:bg-slate-700 font-bold rounded-xl text-xs border transition">Kelas 1</button>
+                    <button type="button" onclick="selectGrade(2)" id="btn-grade-2" class="grade-btn py-2 bg-slate-200 dark:bg-slate-700 font-bold rounded-xl text-xs border transition">Kelas 2</button>
+                    <button type="button" onclick="selectGrade(3)" id="btn-grade-3" class="grade-btn py-2 bg-slate-200 dark:bg-slate-700 font-bold rounded-xl text-xs border transition">Kelas 3</button>
+                    <button type="button" onclick="selectGrade(4)" id="btn-grade-4" class="grade-btn py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs border border-indigo-400 transition shadow-md">Kelas 4</button>
+                    <button type="button" onclick="selectGrade(5)" id="btn-grade-5" class="grade-btn py-2 bg-slate-200 dark:bg-slate-700 font-bold rounded-xl text-xs border transition">Kelas 5</button>
+                    <button type="button" onclick="selectGrade(6)" id="btn-grade-6" class="grade-btn py-2 bg-slate-200 dark:bg-slate-700 font-bold rounded-xl text-xs border transition">Kelas 6</button>
+                </div>
+            </div>
+
+            <!-- Teacher Subject Selection Filter -->
+            <div class="theme-inner p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/60 space-y-2.5">
+                <div class="flex justify-between items-center">
+                    <label class="block text-xs font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-wider">
+                        2. Pilih Mata Pelajaran (Mode Guru):
+                    </label>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="selectAllSubjects(true)" class="text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-bold transition">
+                            <i class="fa-solid fa-check-double mr-1"></i> Pilih Semua
+                        </button>
+                        <button type="button" onclick="selectAllSubjects(false)" class="text-[11px] bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 px-2.5 py-1 rounded-lg font-semibold transition">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+                <div id="subject-checkboxes-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <!-- Checkboxes injected dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Player Count Selection -->
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider mb-2">3. Jumlah Pemain:</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button type="button" onclick="setPlayerCount(2)" id="btn-count-2" class="count-btn py-2 bg-slate-200 dark:bg-slate-700 font-bold rounded-xl text-xs border transition">2 Pemain</button>
+                    <button type="button" onclick="setPlayerCount(3)" id="btn-count-3" class="count-btn py-2 bg-slate-200 dark:bg-slate-700 font-bold rounded-xl text-xs border transition">3 Pemain</button>
+                    <button type="button" onclick="setPlayerCount(4)" id="btn-count-4" class="count-btn py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs border border-indigo-400 transition">4 Pemain</button>
+                    <button type="button" onclick="setPlayerCount(5)" id="btn-count-5" class="count-btn py-2 bg-slate-200 dark:bg-slate-700 font-bold rounded-xl text-xs border transition">5 Pemain</button>
+                </div>
+            </div>
+
+            <!-- Dynamic Inputs for Player Names & Type -->
+            <div id="player-inputs-list" class="space-y-2.5 max-h-[180px] overflow-y-auto pr-1">
+                <!-- Injected via JS -->
+            </div>
+
+            <button onclick="applyPlayerSetup()" class="w-full py-3 bg-gradient-to-r from-emerald-500 via-teal-600 to-indigo-600 hover:from-emerald-600 hover:to-indigo-700 text-white font-bold rounded-xl text-sm shadow-xl transition">
+                <i class="fa-solid fa-play mr-2"></i> Mulai Permainan Edukasi
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 5: Winner Celebration Modal (Podium & Confetti) -->
+    <div id="winner-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-50 hidden flex items-center justify-center p-4">
+        <div class="theme-panel border-2 border-amber-400/80 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-center space-y-5 relative overflow-hidden">
+            <div class="w-20 h-20 bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-900 rounded-3xl flex items-center justify-center text-4xl mx-auto shadow-xl font-bold border-4 border-amber-200">
+                🏆
+            </div>
+
+            <div>
+                <span class="bg-amber-400/20 text-amber-500 dark:text-amber-300 border border-amber-400/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                    Juara Edupoly SD
+                </span>
+                <h2 id="winner-title" class="text-2xl sm:text-3xl font-black font-heading mt-2">
+                    Selamat, Player 1!
+                </h2>
+                <p id="winner-subtext" class="text-xs sm:text-sm text-slate-500 dark:text-slate-300 mt-1">
+                    Berhasil menjadi Pemenang Utama dengan total kekayaan koin terbanyak!
+                </p>
+            </div>
+
+            <!-- Winner Leaderboard Breakdown -->
+            <div id="winner-leaderboard" class="theme-inner p-4 rounded-2xl border space-y-2.5 text-xs">
+                <!-- Injected via JS -->
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button onclick="showSetupModal(); document.getElementById('winner-modal').classList.add('hidden');" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition shadow-lg">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Main Lagi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* MASTER SUBJECT CONFIGURATION */
+        const MASTER_SUBJECTS = [
+            { id: "PAI", name: "PAI (Agama)", icon: "fa-kaaba", bgClass: "bg-emerald-950/60 border-emerald-800/60 text-emerald-300" },
+            { id: "IPS", name: "IPS (Sosial)", icon: "fa-people-roof", bgClass: "bg-amber-950/60 border-amber-800/60 text-amber-300" },
+            { id: "PJOK", name: "PJOK (Penjas)", icon: "fa-person-running", bgClass: "bg-rose-950/60 border-rose-800/60 text-rose-300" },
+            { id: "Matematika", name: "Matematika", icon: "fa-calculator", bgClass: "bg-blue-950/60 border-blue-800/60 text-blue-300" },
+            { id: "Sains", name: "IPA / Sains", icon: "fa-atom", bgClass: "bg-teal-950/60 border-teal-800/60 text-teal-300" },
+            { id: "Bahasa", name: "Bahasa Indo", icon: "fa-book-open", bgClass: "bg-pink-950/60 border-pink-800/60 text-pink-300" },
+            { id: "Seni", name: "Seni Budaya", icon: "fa-palette", bgClass: "bg-cyan-950/60 border-cyan-800/60 text-cyan-300" },
+            { id: "Informatika", name: "Informatika", icon: "fa-laptop-code", bgClass: "bg-purple-950/60 border-purple-800/60 text-purple-300" }
+        ];
+
+        /* ACTIVE TEACHER SUBJECTS */
+        let activeSubjects = ["PAI", "IPS", "PJOK", "Matematika", "Sains", "Bahasa", "Seni", "Informatika"];
+
+        /* LIGHT / DARK MODE TOGGLE SYSTEM */
+        let isDarkMode = true;
+
+        function toggleThemeMode() {
+            isDarkMode = !isDarkMode;
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body;
+            const iconEl = document.getElementById('theme-toggle-icon');
+            const textEl = document.getElementById('theme-toggle-text');
+
+            if (isDarkMode) {
+                htmlEl.classList.add('dark');
+                bodyEl.classList.remove('light-theme');
+                iconEl.className = 'fa-solid fa-moon text-amber-300';
+                textEl.textContent = 'Mode Gelap';
+            } else {
+                htmlEl.classList.remove('dark');
+                bodyEl.classList.add('light-theme');
+                iconEl.className = 'fa-solid fa-sun text-amber-500';
+                textEl.textContent = 'Mode Terang';
+            }
+        }
+
+        /* WEB AUDIO SYNTHESIS FOR SOUND EFFECTS */
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'hop') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(700, now + 0.08);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'dice') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.exponentialRampToValueAtTime(160, now + 0.12);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } else if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(170, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.15);
+                osc.frequency.setValueAtTime(783.99, now + 0.3);
+                osc.frequency.setValueAtTime(1046.50, now + 0.45);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.8);
+                osc.start(now);
+                osc.stop(now + 0.8);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-emerald-500 dark:text-emerald-400';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+                document.getElementById('fullscreen-icon').className = 'fa-solid fa-compress text-indigo-500 dark:text-indigo-400';
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    document.getElementById('fullscreen-icon').className = 'fa-solid fa-expand text-indigo-500 dark:text-indigo-400';
+                }
+            }
+        }
+
+        /* 40 BOARD TILES CONFIGURATION */
+        const BOARD_TILES = [
+            { id: 0, name: "START (Beasiswa)", type: "start", color: "bg-emerald-600", icon: "fa-flag-checkered" },
+            { id: 1, name: "Pos PAI: Rukun Iman", type: "property", category: "PAI", price: 60, rent: 10, color: "bg-emerald-700", icon: "fa-kaaba" },
+            { id: 2, name: "Kuis Kaget", type: "quiz_special", color: "bg-purple-600", icon: "fa-bolt" },
+            { id: 3, name: "Pos PAI: Akhlak Mulia", type: "property", category: "PAI", price: 60, rent: 12, color: "bg-emerald-700", icon: "fa-hand-holding-heart" },
+            { id: 4, name: "Beli Alat Tulis", type: "tax", amount: 50, color: "bg-amber-600", icon: "fa-pen-ruler" },
+            { id: 5, name: "Pos PJOK: Otot & Senam", type: "property", category: "PJOK", price: 100, rent: 15, color: "bg-rose-600", icon: "fa-person-running" },
+            { id: 6, name: "Pos Mat: Penjumlahan", type: "property", category: "Matematika", price: 100, rent: 15, color: "bg-blue-600", icon: "fa-calculator" },
+            { id: 7, name: "Kesempatan", type: "quiz_special", color: "bg-amber-500", icon: "fa-star" },
+            { id: 8, name: "Pos Mat: Perkalian", type: "property", category: "Matematika", price: 120, rent: 18, color: "bg-blue-600", icon: "fa-shapes" },
+            { id: 9, name: "Pos Mat: Bangun Datar", type: "property", category: "Matematika", price: 120, rent: 20, color: "bg-blue-600", icon: "fa-draw-polygon" },
+            
+            { id: 10, name: "Ruang BK (Karantina)", type: "jail", color: "bg-red-700", icon: "fa-lock" },
+            { id: 11, name: "Pos IPS: Pahlawan", type: "property", category: "IPS", price: 140, rent: 22, color: "bg-amber-700", icon: "fa-landmark" },
+            { id: 12, name: "Pos PJOK: Olahraga Bola", type: "property", category: "PJOK", price: 140, rent: 22, color: "bg-rose-600", icon: "fa-futbol" },
+            { id: 13, name: "Pos IPS: Keragaman Suku", type: "property", category: "IPS", price: 160, rent: 25, color: "bg-amber-700", icon: "fa-people-roof" },
+            { id: 14, name: "Pos IPS: Peta & Wilayah", type: "property", category: "IPS", price: 160, rent: 25, color: "bg-amber-700", icon: "fa-map-location-dot" },
+            { id: 15, name: "Pos IPA: Tumbuhan & Rantai Makanan", type: "property", category: "Sains", price: 180, rent: 28, color: "bg-teal-600", icon: "fa-seedling" },
+            { id: 16, name: "Kuis Kaget", type: "quiz_special", color: "bg-purple-600", icon: "fa-bolt" },
+            { id: 17, name: "Pos IPA: Wujud Benda", type: "property", category: "Sains", price: 180, rent: 28, color: "bg-teal-600", icon: "fa-flask" },
+            { id: 18, name: "Pos IPA: Tata Surya", type: "property", category: "Sains", price: 200, rent: 32, color: "bg-teal-600", icon: "fa-sun" },
+            { id: 19, name: "Perpustakaan", type: "quiz_special", color: "bg-indigo-600", icon: "fa-book" },
+
+            { id: 20, name: "Kantin Sekolah (Istirahat)", type: "parking", color: "bg-teal-700", icon: "fa-utensils" },
+            { id: 21, name: "Pos PAI: Kisah Nabi", type: "property", category: "PAI", price: 220, rent: 35, color: "bg-emerald-700", icon: "fa-book-quran" },
+            { id: 22, name: "Kesempatan", type: "quiz_special", color: "bg-amber-500", icon: "fa-star" },
+            { id: 23, name: "Pos Bahasa: Puisi & Pantun", type: "property", category: "Bahasa", price: 220, rent: 35, color: "bg-pink-600", icon: "fa-file-lines" },
+            { id: 24, name: "Pos Bahasa: Paragraf Utama", type: "property", category: "Bahasa", price: 240, rent: 38, color: "bg-pink-600", icon: "fa-quote-left" },
+            { id: 25, name: "Pos Informatika: Komputer", type: "property", category: "Informatika", price: 260, rent: 40, color: "bg-purple-600", icon: "fa-laptop" },
+            { id: 26, name: "Pos PJOK: Gizi & Kesehatan", type: "property", category: "PJOK", price: 260, rent: 40, color: "bg-rose-600", icon: "fa-apple-whole" },
+            { id: 27, name: "Pos Informatika: Internet Aman", type: "property", category: "Informatika", price: 280, rent: 45, color: "bg-purple-600", icon: "fa-network-wired" },
+            { id: 28, name: "Sumbangan Pramuka", type: "tax", amount: 100, color: "bg-amber-600", icon: "fa-hand-holding-heart" },
+            { id: 29, name: "Pos Seni: Alat Musik & Tari", type: "property", category: "Seni", price: 280, rent: 45, color: "bg-cyan-600", icon: "fa-music" },
+
+            { id: 30, name: "Masuk Ruang BK", type: "go_to_jail", color: "bg-rose-700", icon: "fa-user-ninja" },
+            { id: 31, name: "Pos Mat: Pecahan & Desimal", type: "property", category: "Matematika", price: 300, rent: 50, color: "bg-blue-600", icon: "fa-percent" },
+            { id: 32, name: "Pos IPS: Kegiatan Ekonomi", type: "property", category: "IPS", price: 300, rent: 50, color: "bg-amber-700", icon: "fa-store" },
+            { id: 33, name: "Kuis Kaget", type: "quiz_special", color: "bg-purple-600", icon: "fa-bolt" },
+            { id: 34, name: "Pos PAI: Bersuci & Shalat", type: "property", category: "PAI", price: 320, rent: 55, color: "bg-emerald-700", icon: "fa-hands-wash" },
+            { id: 35, name: "Pos IPA: Gaya & Energi", type: "property", category: "Sains", price: 320, rent: 55, color: "bg-teal-600", icon: "fa-magnet" },
+            { id: 36, name: "Ujian Akhir Semester", type: "quiz_special", color: "bg-indigo-600", icon: "fa-graduation-cap" },
+            { id: 37, name: "Pos Bahasa: Tata Bahasa", type: "property", category: "Bahasa", price: 350, rent: 60, color: "bg-pink-600", icon: "fa-spell-check" },
+            { id: 38, name: "Pajak Kas Kelas", type: "tax", amount: 120, color: "bg-amber-600", icon: "fa-receipt" },
+            { id: 39, name: "Pos Seni: Karya Dua Dimensi", type: "property", category: "Seni", price: 400, rent: 70, color: "bg-cyan-600", icon: "fa-palette" }
+        ];
+
+        /* QUESTION DATABASE GRADE 1-6 SD */
+        const QUESTION_DATABASE = {
+            1: {
+                "PAI": [
+                    { q: "Rukun Islam yang pertama adalah mengucapkan...", options: ["Dua Kalimat Syahadat", "Shalat", "Puasa", "Zakat"], answer: 0 },
+                    { q: "Sebelum makan kita harus...", options: ["Tidur", "Berdoa", "Lari", "Menangis"], answer: 1 }
+                ],
+                "Matematika": [
+                    { q: "Berapakah hasil dari 5 + 4?", options: ["8", "9", "10", "7"], answer: 1 },
+                    { q: "Angka setelah 12 adalah...", options: ["11", "13", "14", "15"], answer: 1 }
+                ],
+                "Sains": [
+                    { q: "Bagian tubuh untuk melihat benda adalah...", options: ["Telinga", "Mata", "Hidung", "Kaki"], answer: 1 },
+                    { q: "Hewan yang mengeong adalah...", options: ["Anjing", "Kucing", "Ayam", "Sapi"], answer: 1 }
+                ],
+                "IPS": [
+                    { q: "Orang tua laki-laki kita dipanggil...", options: ["Ibu", "Ayah", "Paman", "Kakek"], answer: 1 },
+                    { q: "Lambang negara Indonesia adalah...", options: ["Garuda Pancasila", "Bintang", "Pohon Beringin", "Bendera"], answer: 0 }
+                ],
+                "PJOK": [
+                    { q: "Mencuci tangan menggunakan air dan...", options: ["Sabun", "Minyak", "Tepung", "Pasir"], answer: 0 },
+                    { q: "Berjalan dan berlari melatih kekuatan...", options: ["Tangan", "Mata", "Kaki", "Telinga"], answer: 2 }
+                ],
+                "Bahasa": [
+                    { q: "M-A-T-A dibaca...", options: ["Mata", "Mada", "Mana", "Mapa"], answer: 0 }
+                ],
+                "Seni": [
+                    { q: "Warna daun yang segar umumnya adalah...", options: ["Merah", "Hijau", "Biru", "Kuning"], answer: 1 }
+                ],
+                "Informatika": [
+                    { q: "Alat untuk mengetik huruf di komputer adalah...", options: ["Mouse", "Keyboard", "Layar", "Printer"], answer: 1 }
+                ]
+            },
+            2: {
+                "PAI": [
+                    { q: "Nabi dan Rasul pertama yang diciptakan Allah adalah...", options: ["Nabi Muhammad SAW", "Nabi Adam a.s.", "Nabi Ibrahim a.s.", "Nabi Musa a.s."], answer: 1 }
+                ],
+                "Matematika": [
+                    { q: "Berapakah hasil dari 25 - 12?", options: ["11", "13", "14", "15"], answer: 1 },
+                    { q: "3 x 4 sama artinya dengan...", options: ["4+4+4", "3+3+3", "3+4", "4x4"], answer: 0 }
+                ],
+                "Sains": [
+                    { q: "Benda cair jika dipindahkan ke wadah lain bentuknya...", options: ["Tetap", "Berubah mengikuti wadah", "Hilang", "Mengecil"], answer: 1 }
+                ],
+                "IPS": [
+                    { q: "Sila pertama Pancasila dilambangkan dengan simbol...", options: ["Rantai", "Bintang", "Pohon Beringin", "Kepala Banteng"], answer: 1 }
+                ],
+                "PJOK": [
+                    { q: "Sebelum melakukan olahraga sebaiknya kita melakukan...", options: ["Makan kenyang", "Pemanasan", "Tidur", "Mandi"], answer: 1 }
+                ],
+                "Bahasa": [
+                    { q: "Lawan kata (antonim) dari 'Rajin' adalah...", options: ["Pintar", "Malas", "Giat", "Patuh"], answer: 1 }
+                ],
+                "Seni": [
+                    { q: "Pencampuran warna merah dan kuning menghasilkan warna...", options: ["Hijau", "Jingga / Oranye", "Ungu", "Cokelat"], answer: 1 }
+                ],
+                "Informatika": [
+                    { q: "Layar komputer yang menampilkan gambar disebut...", options: ["Monitor", "CPU", "Mouse", "Speaker"], answer: 0 }
+                ]
+            },
+            3: {
+                "PAI": [
+                    { q: "Malaikat yang bertugas menyampaikan wahyu adalah...", options: ["Jibril", "Mikail", "Israfil", "Izrail"], answer: 0 }
+                ],
+                "Matematika": [
+                    { q: "Sebuah persegi memiliki panjang sisi 6 cm. Berapa kelilingnya?", options: ["18 cm", "24 cm", "36 cm", "12 cm"], answer: 1 }
+                ],
+                "Sains": [
+                    { q: "Proses perubahan wujud benda padat menjadi cair disebut...", options: ["Membeku", "Mencair", "Menguap", "Mengembun"], answer: 1 }
+                ],
+                "IPS": [
+                    { q: "Uang kertas dan uang logam yang kita gunakan transaksi disebut uang...", options: ["Giral", "Kartal", "Kredit", "Barter"], answer: 1 }
+                ],
+                "PJOK": [
+                    { q: "Gerakan melompat dapat melatih kekuatan otot...", options: ["Lengan", "Kaki", "Leher", "Perut"], answer: 1 }
+                ],
+                "Bahasa": [
+                    { q: "Gagasan utama dalam sebuah paragraf disebut...", options: ["Kalimat penjelas", "Ide pokok", "Judul", "Kesimpulan"], answer: 1 }
+                ],
+                "Seni": [
+                    { q: "Alat musik Pianika dimainkan dengan cara...", options: ["Dipukul", "Ditiup dan ditekan tutsnya", "Dipetik", "Digesek"], answer: 1 }
+                ],
+                "Informatika": [
+                    { q: "Aplikasi komputer untuk menggambar sederhana adalah...", options: ["Ms Paint", "Calculator", "Notepad", "Browser"], answer: 0 }
+                ]
+            },
+            4: {
+                "PAI": [
+                    { q: "Kitab suci Al-Qur'an diturunkan kepada Nabi...", options: ["Isa a.s.", "Musa a.s.", "Daud a.s.", "Muhammad SAW"], answer: 3 },
+                    { q: "Bersuci dari hadas kecil dilakukan dengan cara...", options: ["Mandi wajib", "Berwudhu", "Cuci muka", "Sikat gigi"], answer: 1 }
+                ],
+                "Matematika": [
+                    { q: "Berapakah KPK dari bilangan 4 dan 6?", options: ["8", "12", "16", "24"], answer: 1 },
+                    { q: "Pecahan 2/4 jika disederhanakan menjadi...", options: ["1/3", "1/2", "3/4", "2/3"], answer: 1 }
+                ],
+                "Sains": [
+                    { q: "Gaya yang menyebabkan buah mangga jatuh dari pohon ke bumi adalah...", options: ["Gaya Gesek", "Gaya Gravitasi", "Gaya Pegas", "Gaya Magnet"], answer: 1 },
+                    { q: "Tumbuhan hijau membuat makanan sendiri melalui proses...", options: ["Respirasi", "Fotosintesis", "Adaptasi", "Transpirasi"], answer: 1 }
+                ],
+                "IPS": [
+                    { q: "Rumah adat 'Gadang' berasal dari provinsi...", options: ["Jawa Barat", "Sumatera Barat", "Sulawesi Selatan", "Papua"], answer: 1 },
+                    { q: "Kegiatan menghasilkan atau membuat barang dinamakan...", options: ["Konsumsi", "Produksi", "Distribusi", "Transpor"], answer: 1 }
+                ],
+                "PJOK": [
+                    { q: "Penyakit Demam Berdarah ditularkan oleh gigitan nyamuk...", options: ["Anopheles", "Aedes Aegypti", "Culex", "Mansonia"], answer: 1 },
+                    { q: "Sikap awal saat melakukan gerak langkah kaki adalah berdiri...", options: ["Tegak", "Bungkuk", "Miring", "Jongkok"], answer: 0 }
+                ],
+                "Bahasa": [
+                    { q: "Puisi lama yang setiap baitnya terdiri dari 4 baris dan bersajak a-b-a-b adalah...", options: ["Cerpen", "Pantun", "Drama", "Novel"], answer: 1 }
+                ],
+                "Seni": [
+                    { q: "Tari Saman berasal dari daerah...", options: ["Bali", "Aceh", "Jawa Tengah", "Maluku"], answer: 1 }
+                ],
+                "Informatika": [
+                    { q: "Perangkat keras yang berfungsi menggerakkan kursor di layar adalah...", options: ["Keyboard", "Mouse", "Printer", "Scanner"], answer: 1 }
+                ]
+            },
+            5: {
+                "PAI": [
+                    { q: "Zakat yang wajib dikeluarkan setiap umat Islam pada bulan Ramadhan adalah zakat...", options: ["Mal", "Fitrah", "Emas", "Anak"], answer: 1 }
+                ],
+                "Matematika": [
+                    { q: "Sebuah kubus memiliki panjang rusuk 5 cm. Berapa volume kubus tersebut?", options: ["25 cm³", "100 cm³", "125 cm³", "150 cm³"], answer: 2 }
+                ],
+                "Sains": [
+                    { q: "Organ pernapasan utama pada manusia adalah...", options: ["Jantung", "Paru-paru", "Hati", "Lambung"], answer: 1 }
+                ],
+                "IPS": [
+                    { q: "Tokoh yang mengetik teks Proklamasi Kemerdekaan Indonesia adalah...", options: ["Sayuti Melik", "Sukarni", "B.M. Diah", "Chaerul Saleh"], answer: 0 }
+                ],
+                "PJOK": [
+                    { q: "Induk organisasi bola voli di Indonesia adalah...", options: ["PSSI", "PBVSI", "PERBASI", "PBSI"], answer: 1 }
+                ],
+                "Bahasa": [
+                    { q: "Kata sapaan atau ungkapan penghormatan dalam surat resmi berada pada...", options: ["Isi surat", "Salam pembuka", "Penutup", "Lampiran"], answer: 1 }
+                ],
+                "Seni": [
+                    { q: "Batik yang dibuat dengan teknik canting dan malam disebut batik...", options: ["Cap", "Tulis", "Cetak", "Ikat"], answer: 1 }
+                ],
+                "Informatika": [
+                    { q: "Sistem jaringan global yang menghubungkan komputer di seluruh dunia dinamakan...", options: ["LAN", "Internet", "Bluetooth", "Wi-Fi"], answer: 1 }
+                ]
+            },
+            6: {
+                "PAI": [
+                    { q: "Hari kiamat atau hari kehancuran alam semesta disebut juga Yaumul...", options: ["Qiyamah", "Ba'ats", "Mahsyar", "Mizan"], answer: 0 }
+                ],
+                "Matematika": [
+                    { q: "Berapakah hasil dari -15 + 20 - (-5)?", options: ["0", "10", "25", "30"], answer: 2 }
+                ],
+                "Sains": [
+                    { q: "Planet terbesar dalam sistem Tata Surya kita adalah...", options: ["Saturnus", "Yupiter", "Neptunus", "Uranus"], answer: 1 }
+                ],
+                "IPS": [
+                    { q: "Organisasi perhimpunan bangsa-bangsa di kawasan Asia Tenggara adalah...", options: ["PBB", "ASEAN", "APEC", "G20"], answer: 1 }
+                ],
+                "PJOK": [
+                    { q: "Pola makan sehat bergizi seimbang dikenal dengan sebutan...", options: ["4 Sehat 5 Sempurna / Isi Piringku", "Diet Ketat", "Fast Food", "Junk Food"], answer: 0 }
+                ],
+                "Bahasa": [
+                    { q: "Teks yang berisi laporan tentang proses terjadinya suatu fenomena alam atau sosial adalah...", options: ["Teks Eksplanasi", "Teks Narasi", "Teks Deskripsi", "Teks Prosedur"], answer: 0 }
+                ],
+                "Seni": [
+                    { q: "Patung yang dibuat untuk memperingati jasa pahlawan atau peristiwa sejarah dinamakan patung...", options: ["Religi", "Monumen", "Arsitektur", "Dekorasi"], answer: 1 }
+                ],
+                "Informatika": [
+                    { q: "Sandi Rahasia untuk keamanan akun digital pengguna dinamakan...", options: ["Username", "Password / Kata Sandi", "Email", "Download"], answer: 1 }
+                ]
+            }
+        };
+
+        /* CONSTANT PLAYER PRESETS WITH PERSON AVATARS & ICONS */
+        const PLAYER_CONFIGS = [
+            { id: 0, defaultName: "Budi", icon: "👦", badgeIcon: "fa-user-ninja", color: "#ef4444", border: "border-red-500", text: "text-red-400", badge: "bg-red-500" },
+            { id: 1, defaultName: "Siti", icon: "👧", badgeIcon: "fa-user-astronaut", color: "#3b82f6", border: "border-blue-500", text: "text-blue-400", badge: "bg-blue-500" },
+            { id: 2, defaultName: "Eko", icon: "🧑", badgeIcon: "fa-user-graduate", color: "#10b981", border: "border-emerald-500", text: "text-emerald-400", badge: "bg-emerald-500" },
+            { id: 3, defaultName: "Lani", icon: "👩", badgeIcon: "fa-user-doctor", color: "#f59e0b", border: "border-amber-500", text: "text-amber-400", badge: "bg-amber-500" },
+            { id: 4, defaultName: "Rian", icon: "👨", badgeIcon: "fa-user-tie", color: "#a855f7", border: "border-purple-500", text: "text-purple-400", badge: "bg-purple-500" }
+        ];
+
+        /* GAME STATE VARIABLES */
+        let selectedGrade = 4;
+        let selectedPlayerCount = 4;
+        let players = [];
+        let boardState = {}; 
+        let currentPlayerIndex = 0;
+        let isRolling = false;
+        let activeQuizTimer = null;
+        let pendingBuyTileId = null;
+        let stats = { correct: 0, wrong: 0 };
+
+        /* MODAL & DIALOG MANAGERS */
+        function showSetupModal() {
+            document.getElementById('setup-modal').classList.remove('hidden');
+            renderSubjectCheckboxes();
+            renderPlayerSetupInputs();
+        }
+
+        function showInstructionModal() {
+            document.getElementById('instruction-modal').classList.remove('hidden');
+        }
+
+        function closeInstructionModal() {
+            document.getElementById('instruction-modal').classList.add('hidden');
+        }
+
+        function closeBuyModal() {
+            document.getElementById('buy-modal').classList.add('hidden');
+            pendingBuyTileId = null;
+            endTurn();
+        }
+
+        function renderSubjectCheckboxes() {
+            const container = document.getElementById('subject-checkboxes-grid');
+            container.innerHTML = '';
+
+            MASTER_SUBJECTS.forEach(sub => {
+                const isChecked = activeSubjects.includes(sub.id);
+                const label = document.createElement('label');
+                label.className = `flex items-center gap-2 p-2 rounded-lg theme-inner border ${isChecked ? 'border-indigo-500/80' : 'border-slate-300 dark:border-slate-700'} cursor-pointer transition`;
+                label.innerHTML = `
+                    <input type="checkbox" value="${sub.id}" ${isChecked ? 'checked' : ''} onchange="toggleSubjectFilter('${sub.id}', this.checked)" class="accent-indigo-500 rounded cursor-pointer">
+                    <span class="font-bold flex items-center gap-1.5 truncate">
+                        <i class="fa-solid ${sub.icon} text-indigo-500 text-[10px]"></i> ${sub.name}
+                    </span>
+                `;
+                container.appendChild(label);
+            });
+        }
+
+        function toggleSubjectFilter(subId, isChecked) {
+            if (isChecked) {
+                if (!activeSubjects.includes(subId)) activeSubjects.push(subId);
+            } else {
+                if (activeSubjects.length <= 1) {
+                    alert("⚠️ Minimal harus ada 1 mata pelajaran yang dipilih oleh Guru!");
+                    renderSubjectCheckboxes();
+                    return;
+                }
+                activeSubjects = activeSubjects.filter(id => id !== subId);
+            }
+            renderSubjectCheckboxes();
+        }
+
+        function selectAllSubjects(select) {
+            if (select) {
+                activeSubjects = MASTER_SUBJECTS.map(s => s.id);
+            } else {
+                activeSubjects = ["Matematika"];
+            }
+            renderSubjectCheckboxes();
+        }
+
+        function renderActiveSubjectsBadges() {
+            const container = document.getElementById('active-subjects-badge-container');
+            const countEl = document.getElementById('active-subject-count');
+            container.innerHTML = '';
+            
+            countEl.textContent = `${activeSubjects.length} Ditampilkan`;
+
+            MASTER_SUBJECTS.forEach(sub => {
+                if (activeSubjects.includes(sub.id)) {
+                    const badge = document.createElement('div');
+                    badge.className = `flex items-center gap-1.5 p-1.5 border rounded-lg ${sub.bgClass}`;
+                    badge.innerHTML = `<i class="fa-solid ${sub.icon}"></i> ${sub.name}`;
+                    container.appendChild(badge);
+                }
+            });
+        }
+
+        function selectGrade(grade) {
+            selectedGrade = grade;
+            for (let g = 1; g <= 6; g++) {
+                const btn = document.getElementById(`btn-grade-${g}`);
+                if (g === grade) {
+                    btn.className = "grade-btn py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs border border-indigo-400 transition shadow-md";
+                } else {
+                    btn.className = "grade-btn py-2 bg-slate-200 dark:bg-slate-700 font-bold rounded-xl text-xs border transition";
+                }
+            }
+        }
+
+        function setPlayerCount(count) {
+            selectedPlayerCount = count;
+            for (let i = 2; i <= 5; i++) {
+                const btn = document.getElementById(`btn-count-${i}`);
+                if (i === count) {
+                    btn.className = "count-btn py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs border border-indigo-400 transition shadow-md";
+                } else {
+                    btn.className = "count-btn py-2 bg-slate-200 dark:bg-slate-700 font-bold rounded-xl text-xs border transition";
+                }
+            }
+            renderPlayerSetupInputs();
+        }
+
+        function renderPlayerSetupInputs() {
+            const list = document.getElementById('player-inputs-list');
+            list.innerHTML = '';
+
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const config = PLAYER_CONFIGS[i];
+                const defaultName = config.defaultName;
+                const isAI = i > 0;
+
+                const div = document.createElement('div');
+                div.className = "theme-inner p-2.5 rounded-xl border flex items-center gap-3";
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 w-32 shrink-0">
+                        <span class="text-lg">${config.icon}</span>
+                        <span class="text-xs font-bold ${config.text}">Pemain ${i + 1}</span>
+                    </div>
+                    <input type="text" id="setup-name-${i}" value="${defaultName}" placeholder="Nama Pemain" 
+                           class="w-full theme-inner border rounded-lg px-3 py-1 text-xs focus:outline-none focus:border-indigo-400">
+                    <select id="setup-type-${i}" class="w-28 theme-inner border rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-400 shrink-0">
+                        <option value="human" ${!isAI ? 'selected' : ''}>👤 Manusia</option>
+                        <option value="ai" ${isAI ? 'selected' : ''}>🤖 Bot AI</option>
+                    </select>
+                `;
+                list.appendChild(div);
+            }
+        }
+
+        function applyPlayerSetup() {
+            if (activeSubjects.length === 0) {
+                alert("⚠️ Guru belum memilih Mata Pelajaran! Silakan centang minimal 1 mata pelajaran.");
+                return;
+            }
+
+            players = [];
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const config = PLAYER_CONFIGS[i];
+                const nameInput = document.getElementById(`setup-name-${i}`).value.trim() || `Pemain ${i + 1}`;
+                const typeInput = document.getElementById(`setup-type-${i}`).value;
+
+                players.push({
+                    id: i,
+                    name: nameInput,
+                    icon: config.icon,
+                    money: 1500,
+                    position: 0,
+                    inJail: false,
+                    jailTurns: 0,
+                    isAI: typeInput === 'ai',
+                    color: config.color,
+                    border: config.border,
+                    text: config.text,
+                    badge: config.badge
+                });
+            }
+
+            document.getElementById('header-grade-badge').textContent = `Kelas ${selectedGrade} SD`;
+            document.getElementById('center-grade-title').textContent = `Tingkat SD: Kelas ${selectedGrade}`;
+            document.getElementById('player-count-indicator').textContent = `${selectedPlayerCount} Pemain`;
+
+            renderActiveSubjectsBadges();
+            document.getElementById('setup-modal').classList.add('hidden');
+            resetGame(false);
+        }
+
+        /* BOARD GRID CALCULATION */
+        function getTileGridPosition(tileId) {
+            if (tileId >= 0 && tileId <= 10) {
+                return { row: 11, col: 11 - tileId };
+            } else if (tileId > 10 && tileId <= 20) {
+                return { row: 11 - (tileId - 10), col: 1 };
+            } else if (tileId > 20 && tileId <= 30) {
+                return { row: 1, col: 1 + (tileId - 20) };
+            } else if (tileId > 30 && tileId < 40) {
+                return { row: 1 + (tileId - 30), col: 11 };
+            }
+            return { row: 11, col: 11 };
+        }
+
+        function generateBoardTiles() {
+            const boardContainer = document.getElementById('monopoly-board');
+            const center = boardContainer.querySelector('.board-center');
+            boardContainer.innerHTML = '';
+            boardContainer.appendChild(center);
+
+            BOARD_TILES.forEach(tile => {
+                const pos = getTileGridPosition(tile.id);
+                const tileDiv = document.createElement('div');
+                tileDiv.id = `tile-${tile.id}`;
+                tileDiv.className = `tile ${tile.color}`;
+                tileDiv.style.gridRow = pos.row;
+                tileDiv.style.gridColumn = pos.col;
+
+                let tileContent = '';
+                if (tile.type === 'property') {
+                    tileContent = `
+                        <div class="tile-header bg-slate-900/60 text-white">${tile.category}</div>
+                        <div class="my-auto font-bold px-0.5 leading-tight flex flex-col items-center gap-0.5">
+                            <i class="fa-solid ${tile.icon} text-[10px]"></i>
+                            <span class="truncate w-full">${tile.name.replace('Pos ', '')}</span>
+                        </div>
+                        <div class="text-[9px] font-extrabold text-amber-300 bg-slate-900/80 w-full py-0.5">
+                            🪙${tile.price}
+                        </div>
+                    `;
+                } else {
+                    tileContent = `
+                        <div class="my-auto font-bold p-1 flex flex-col items-center justify-center gap-1">
+                            <i class="fa-solid ${tile.icon} text-xs"></i>
+                            <span class="leading-tight">${tile.name}</span>
+                        </div>
+                    `;
+                }
+
+                tileDiv.innerHTML = tileContent;
+                boardContainer.appendChild(tileDiv);
+            });
+        }
+
+        function resetGame(fullReset = true) {
+            boardState = {};
+            currentPlayerIndex = 0;
+            stats = { correct: 0, wrong: 0 };
+            
+            if (fullReset) {
+                players.forEach(p => {
+                    p.money = 1500;
+                    p.position = 0;
+                    p.inJail = false;
+                    p.jailTurns = 0;
+                });
+            }
+
+            generateBoardTiles();
+            updateUI();
+            logMessage("🎮 Permainan baru dimulai! Giliran pertama untuk " + players[0].name);
+            checkTurn();
+        }
+
+        function updateUI() {
+            // Render Players Status Cards
+            const pContainer = document.getElementById('players-cards-container');
+            pContainer.innerHTML = '';
+
+            players.forEach((p, idx) => {
+                const isTurn = (idx === currentPlayerIndex);
+                const card = document.createElement('div');
+                card.className = `p-2.5 rounded-xl border transition duration-200 ${isTurn ? 'bg-indigo-500/10 border-indigo-400 shadow-md ring-1 ring-indigo-400/50' : 'theme-inner'}`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">${p.icon}</span>
+                            <span class="font-bold text-xs ${isTurn ? 'text-indigo-500 dark:text-indigo-300 font-heading text-sm' : ''}">
+                                ${p.name} ${p.isAI ? '🤖' : ''}
+                            </span>
+                        </div>
+                        <span class="font-bold text-amber-500 dark:text-amber-400 text-xs">🪙 ${p.money}</span>
+                    </div>
+                    ${p.inJail ? '<div class="text-[10px] text-rose-500 dark:text-rose-400 mt-1"><i class="fa-solid fa-lock"></i> Terjebak di BK</div>' : ''}
+                `;
+                pContainer.appendChild(card);
+            });
+
+            // Update Token Positions on Board
+            document.querySelectorAll('.player-token').forEach(t => t.remove());
+
+            players.forEach((p, idx) => {
+                const tileEl = document.getElementById(`tile-${p.position}`);
+                if (tileEl) {
+                    const token = document.createElement('div');
+                    token.id = `player-token-${idx}`;
+                    token.className = `player-token token-${idx}`;
+                    token.textContent = p.icon;
+                    
+                    // Offset stacked tokens
+                    const offset = idx * 3;
+                    token.style.bottom = `${2 + offset}px`;
+                    token.style.right = `${2 + offset}px`;
+
+                    tileEl.appendChild(token);
+                }
+            });
+
+            // Update Quiz Analytics Dashboard
+            const total = stats.correct + stats.wrong;
+            const accuracy = total > 0 ? Math.round((stats.correct / total) * 100) : 0;
+            document.getElementById('stats-correct').textContent = stats.correct;
+            document.getElementById('stats-wrong').textContent = stats.wrong;
+            document.getElementById('accuracy-text').textContent = `${accuracy}%`;
+            document.getElementById('accuracy-bar').style.width = `${accuracy}%`;
+
+            // Check Achievements
+            if (stats.correct >= 3) {
+                document.getElementById('badge-star').className = "text-[10px] sm:text-[11px] bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 font-bold";
+                document.getElementById('badge-star').textContent = "⭐ Bintang Pelajar";
+            }
+            if (stats.correct >= 7) {
+                document.getElementById('badge-expert').className = "text-[10px] sm:text-[11px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 font-bold";
+                document.getElementById('badge-expert').textContent = "🎓 Pakar Sains & Agama";
+            }
+            if (stats.correct >= 12) {
+                document.getElementById('badge-champion').className = "text-[10px] sm:text-[11px] bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 font-bold";
+                document.getElementById('badge-champion').textContent = "🏆 Juara Umum SD";
+            }
+        }
+
+        function logMessage(msg) {
+            const logBox = document.getElementById('game-log');
+            const div = document.createElement('div');
+            div.textContent = msg;
+            logBox.appendChild(div);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function checkTurn() {
+            // Check win condition first
+            if (checkTargetWinner(false)) return;
+
+            const p = players[currentPlayerIndex];
+            const rollBtn = document.getElementById('roll-btn');
+
+            if (p.isAI) {
+                rollBtn.disabled = true;
+                rollBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('dice-result-text').textContent = `🤖 ${p.name} (Bot) sedang berpikir...`;
+                setTimeout(() => {
+                    executeRoll();
+                }, 1200);
+            } else {
+                rollBtn.disabled = false;
+                rollBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('dice-result-text').textContent = `Giliran ${p.name}! Lempar dadu.`;
+            }
+        }
+
+        function humanRollDice() {
+            if (isRolling || players[currentPlayerIndex].isAI) return;
+            executeRoll();
+        }
+
+        function executeRoll() {
+            isRolling = true;
+            const diceDisplay = document.getElementById('dice-display');
+            diceDisplay.classList.add('rolling');
+            playSound('dice');
+
+            setTimeout(() => {
+                const rollVal = Math.floor(Math.random() * 6) + 1;
+                diceDisplay.classList.remove('rolling');
+                diceDisplay.textContent = rollVal;
+                
+                const p = players[currentPlayerIndex];
+                document.getElementById('dice-result-text').textContent = `${p.name} mendapatkan angka ${rollVal}!`;
+                logMessage(`🎲 ${p.name} melempar dadu dan mendapat angka ${rollVal}`);
+
+                animateStepByStepMovement(p, rollVal);
+            }, 600);
+        }
+
+        /* STEP-BY-STEP HOPPING / JUMPING MOVEMENT ANIMATION */
+        function animateStepByStepMovement(player, stepsRemaining) {
+            if (stepsRemaining <= 0) {
+                isRolling = false;
+                setTimeout(() => {
+                    handleTileAction(player, BOARD_TILES[player.position]);
+                }, 300);
+                return;
+            }
+
+            let nextPosition = (player.position + 1) % 40;
+
+            // Check if passed START
+            if (nextPosition === 0) {
+                player.money += 200;
+                logMessage(`🎁 ${player.name} melewati START dan menerima Beasiswa 🪙 200!`);
+            }
+
+            player.position = nextPosition;
+            updateUI();
+
+            // Trigger Hop Sound & Animation
+            playSound('hop');
+            const tokenEl = document.getElementById(`player-token-${player.id}`);
+            if (tokenEl) {
+                tokenEl.classList.add('token-hopping');
+                setTimeout(() => {
+                    tokenEl.classList.remove('token-hopping');
+                }, 200);
+            }
+
+            setTimeout(() => {
+                animateStepByStepMovement(player, stepsRemaining - 1);
+            }, 260);
+        }
+
+        function handleTileAction(player, tile) {
+            logMessage(`📍 ${player.name} tiba di ${tile.name}`);
+
+            if (tile.type === 'property') {
+                const ownerInfo = boardState[tile.id];
+                if (!ownerInfo) {
+                    if (player.isAI) {
+                        if (player.money >= tile.price) {
+                            triggerQuizForCategory(tile.category, (correct) => {
+                                if (correct) {
+                                    player.money -= tile.price;
+                                    boardState[tile.id] = { ownerId: player.id };
+                                    document.getElementById(`tile-${tile.id}`).classList.add('border-2', 'border-amber-400');
+                                    logMessage(`🏠 ${player.name} (Bot) menjawab kuis dengan BENAR dan membeli ${tile.name}!`);
+                                    playSound('buy');
+                                } else {
+                                    logMessage(`❌ ${player.name} (Bot) gagal menjawab kuis untuk membeli ${tile.name}`);
+                                }
+                                updateUI();
+                                endTurn();
+                            });
+                        } else {
+                            endTurn();
+                        }
+                    } else {
+                        pendingBuyTileId = tile.id;
+                        document.getElementById('buy-title').textContent = tile.name;
+                        document.getElementById('buy-price').textContent = `🪙 ${tile.price}`;
+                        document.getElementById('buy-rent').textContent = `🪙 ${tile.rent}`;
+                        document.getElementById('buy-modal').classList.remove('hidden');
+                    }
+                } else if (ownerInfo.ownerId !== player.id) {
+                    const owner = players[ownerInfo.ownerId];
+                    const rentVal = tile.rent;
+                    player.money -= rentVal;
+                    owner.money += rentVal;
+                    logMessage(`💸 ${player.name} membayar sewa 🪙 ${rentVal} kepada ${owner.name}`);
+                    updateUI();
+                    endTurn();
+                } else {
+                    logMessage(`😊 ${player.name} mengunjungi pos milik sendiri.`);
+                    endTurn();
+                }
+            } else if (tile.type === 'quiz_special') {
+                triggerSpecialQuiz();
+            } else if (tile.type === 'tax') {
+                player.money -= tile.amount;
+                logMessage(`💸 ${player.name} membayar ${tile.name} sebesar 🪙 ${tile.amount}`);
+                updateUI();
+                endTurn();
+            } else if (tile.type === 'go_to_jail') {
+                player.position = 10;
+                player.inJail = true;
+                logMessage(`🚨 ${player.name} masuk ke Ruang BK (Karantina)!`);
+                updateUI();
+                endTurn();
+            } else {
+                endTurn();
+            }
+        }
+
+        function confirmBuyProperty() {
+            document.getElementById('buy-modal').classList.add('hidden');
+            const tile = BOARD_TILES[pendingBuyTileId];
+            const p = players[currentPlayerIndex];
+
+            if (p.money < tile.price) {
+                alert("Koin Edu tidak cukup untuk membeli pos ini!");
+                endTurn();
+                return;
+            }
+
+            triggerQuizForCategory(tile.category, (correct) => {
+                if (correct) {
+                    p.money -= tile.price;
+                    boardState[tile.id] = { ownerId: p.id };
+                    document.getElementById(`tile-${tile.id}`).classList.add('border-2', 'border-amber-400');
+                    logMessage(`🎉 Selamat! ${p.name} menjawab kuis dengan BENAR dan resmi memiliki ${tile.name}!`);
+                    playSound('buy');
+                } else {
+                    logMessage(`❌ Jawaban salah. ${p.name} belum bisa membeli ${tile.name}.`);
+                }
+                updateUI();
+                endTurn();
+            });
+        }
+
+        function triggerSpecialQuiz() {
+            const randomSub = activeSubjects[Math.floor(Math.random() * activeSubjects.length)];
+
+            triggerQuizForCategory(randomSub, (correct) => {
+                if (correct) {
+                    players[currentPlayerIndex].money += 200;
+                    logMessage(`🌟 Luar Biasa! ${players[currentPlayerIndex].name} menjawab kuis dengan benar dan mendapat Beasiswa 🪙 200!`);
+                    updateUI();
+                } else {
+                    logMessage(`❌ Jawaban belum tepat. Semangat belajar!`);
+                }
+                endTurn();
+            });
+        }
+
+        function triggerQuizForCategory(category, callback) {
+            if (!activeSubjects.includes(category)) {
+                category = activeSubjects[Math.floor(Math.random() * activeSubjects.length)];
+            }
+
+            const gradeQuestions = QUESTION_DATABASE[selectedGrade] || QUESTION_DATABASE[4];
+            let questionsList = gradeQuestions[category];
+
+            if (!questionsList || questionsList.length === 0) {
+                const fallbackCat = activeSubjects.find(sub => gradeQuestions[sub] && gradeQuestions[sub].length > 0) || "Matematika";
+                questionsList = gradeQuestions[fallbackCat] || QUESTION_DATABASE[1]["Matematika"];
+            }
+
+            const qObj = questionsList[Math.floor(Math.random() * questionsList.length)];
+
+            const modal = document.getElementById('quiz-modal');
+            document.getElementById('quiz-category').textContent = category;
+            document.getElementById('quiz-grade-label').textContent = `Kelas ${selectedGrade} SD`;
+            document.getElementById('quiz-question').textContent = qObj.q;
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            let timeLeft = 25;
+            const timerEl = document.getElementById('quiz-timer');
+            timerEl.textContent = `⏱️ ${timeLeft}s`;
+
+            clearInterval(activeQuizTimer);
+            activeQuizTimer = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = `⏱️ ${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(activeQuizTimer);
+                    finishQuiz(false, callback);
+                }
+            }, 1000);
+
+            qObj.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full p-3 theme-inner hover:bg-indigo-600 hover:text-white text-left rounded-xl font-semibold text-xs sm:text-sm transition flex items-center justify-between border";
+                btn.innerHTML = `<span>${opt}</span> <i class="fa-regular fa-circle text-slate-400"></i>`;
+
+                btn.onclick = () => {
+                    clearInterval(activeQuizTimer);
+                    const isCorrect = (idx === qObj.answer);
+                    if (isCorrect) {
+                        btn.className = "w-full p-3 bg-emerald-600 text-white text-left rounded-xl font-semibold text-xs sm:text-sm flex items-center justify-between border border-emerald-500";
+                        playSound('correct');
+                        stats.correct++;
+                    } else {
+                        btn.className = "w-full p-3 bg-rose-600 text-white text-left rounded-xl font-semibold text-xs sm:text-sm flex items-center justify-between border border-rose-500";
+                        playSound('wrong');
+                        stats.wrong++;
+                    }
+
+                    setTimeout(() => {
+                        finishQuiz(isCorrect, callback);
+                    }, 900);
+                };
+
+                optionsContainer.appendChild(btn);
+            });
+
+            if (players[currentPlayerIndex].isAI) {
+                setTimeout(() => {
+                    clearInterval(activeQuizTimer);
+                    const botIsCorrect = Math.random() < 0.75;
+                    finishQuiz(botIsCorrect, callback);
+                }, 1800);
+            } else {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function finishQuiz(isCorrect, callback) {
+            document.getElementById('quiz-modal').classList.add('hidden');
+            if (callback) callback(isCorrect);
+        }
+
+        /* WINNER & PODIUM CALCULATION LOGIC */
+        function checkTargetWinner(forceEnd = false) {
+            let winnerFound = null;
+
+            // Condition A: Player reached 3,000 Edu Coins
+            if (!forceEnd) {
+                winnerFound = players.find(p => p.money >= 3000);
+            }
+
+            // Condition B: Force End or All Properties Owned
+            if (forceEnd || winnerFound) {
+                // Calculate Total Wealth (Cash + Property Asset Value)
+                const sortedPlayers = [...players].map(p => {
+                    let propertyVal = 0;
+                    let ownedCount = 0;
+                    Object.keys(boardState).forEach(tileId => {
+                        if (boardState[tileId].ownerId === p.id) {
+                            propertyVal += BOARD_TILES[tileId].price || 0;
+                            ownedCount++;
+                        }
+                    });
+                    return {
+                        ...p,
+                        ownedCount,
+                        netWorth: p.money + propertyVal
+                    };
+                }).sort((a, b) => b.netWorth - a.netWorth);
+
+                const champion = sortedPlayers[0];
+                showWinnerModal(champion, sortedPlayers);
+                return true;
+            }
+            return false;
+        }
+
+        function showWinnerModal(champion, leaderboard) {
+            playSound('win');
+            
+            // Launch Confetti Explosion
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            }
+
+            document.getElementById('winner-title').textContent = `Selamat, ${champion.name}! 🎉`;
+            document.getElementById('winner-subtext').textContent = `Memenangkan permainan dengan total aset sebesar 🪙 ${champion.netWorth}!`;
+
+            const lbContainer = document.getElementById('winner-leaderboard');
+            lbContainer.innerHTML = '';
+
+            leaderboard.forEach((p, idx) => {
+                const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '🎖️'));
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center p-2 rounded-lg theme-inner border";
+                div.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span>${medal}</span>
+                        <span class="font-bold">${p.name} ${p.isAI ? '🤖' : ''}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-bold text-amber-500 dark:text-amber-400">🪙 ${p.netWorth}</span>
+                        <span class="text-[10px] text-slate-400 block">${p.ownedCount} Pos miliknya</span>
+                    </div>
+                `;
+                lbContainer.appendChild(div);
+            });
+
+            document.getElementById('winner-modal').classList.remove('hidden');
+        }
+
+        function endTurn() {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            updateUI();
+            checkTurn();
+        }
+
+        /* INITIALIZATION ON WINDOW LOAD */
+        window.onload = () => {
+            showSetupModal();
+            selectGrade(4);
+            setPlayerCount(4);
+        };
+    </script>
+</body>
+</html>
