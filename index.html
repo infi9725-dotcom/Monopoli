@@ -119,7 +119,7 @@
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: clamp(0.5rem, 1.2vw, 1.5rem);
+            padding: clamp(0.25rem, 1vw, 1.5rem);
             position: relative;
         }
 
@@ -222,6 +222,36 @@
         @keyframes pulseGlow {
             0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); }
             50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.95); }
+        }
+
+        /* Mobile Layout & Board Center Visibility Fixes */
+        @media (max-width: 639px) {
+            .monopoly-board {
+                max-width: 100%;
+                aspect-ratio: 1 / 1;
+            }
+            .board-center {
+                padding: 0.25rem;
+                gap: 0.25rem;
+            }
+            .center-logo-box {
+                display: none; /* Hide top logo inside center on tiny screens to guarantee dice button visibility */
+            }
+            #dice-display {
+                width: 2.75rem !important;
+                height: 2.75rem !important;
+                font-size: 1.5rem !important;
+            }
+            #roll-btn {
+                padding: 0.4rem 0.8rem !important;
+                font-size: 0.85rem !important;
+                border-radius: 0.75rem !important;
+            }
+            #dice-result-text {
+                font-size: 0.7rem !important;
+                min-height: 18px !important;
+                line-height: 1.1 !important;
+            }
         }
 
         /* 75-inch Board Typography Scale Enhancements */
@@ -335,33 +365,33 @@
                     <!-- 40 Tiles generated dynamically via JS -->
 
                     <!-- Center Area of Board -->
-                    <div class="board-center justify-center gap-4 sm:gap-6">
+                    <div class="board-center justify-center gap-1 sm:gap-6">
                         <!-- Title & Active Grade Badge with Custom Logo -->
-                        <div class="text-center flex flex-col items-center">
-                            <div class="w-12 h-12 sm:w-16 sm:h-16 mb-1 drop-shadow-md">
+                        <div class="center-logo-box text-center flex flex-col items-center">
+                            <div class="w-8 h-8 sm:w-16 sm:h-16 mb-0.5 sm:mb-1 drop-shadow-md">
                                 <img src="https://iili.io/By8FQ7s.png" alt="Edupoly Logo" class="w-full h-full object-contain" onerror="this.onerror=null; this.style.display='none';">
                             </div>
-                            <span class="bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
+                            <span class="bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 px-2.5 py-0.5 rounded-full text-[9px] sm:text-xs font-semibold uppercase tracking-wider">
                                 Media Pembelajaran Smartboard
                             </span>
-                            <h3 class="font-heading text-2xl sm:text-3xl lg:text-4xl font-black tracking-wide mt-1">SDN 22 TANAH KERAS</h3>
-                            <p id="center-grade-title" class="text-xs sm:text-sm font-bold text-amber-500 dark:text-amber-400">Tingkat SD: Kelas 4</p>
+                            <h3 class="font-heading text-lg sm:text-3xl lg:text-4xl font-black tracking-wide mt-0.5 sm:mt-1">SDN 22 TANAH KERAS</h3>
+                            <p id="center-grade-title" class="text-[10px] sm:text-sm font-bold text-amber-500 dark:text-amber-400">Tingkat SD: Kelas 4</p>
                         </div>
 
-                        <!-- Dice & Control Panel -->
-                        <div class="flex flex-col items-center space-y-3 sm:space-y-4">
-                            <div class="flex items-center justify-center gap-3">
-                                <div id="dice-display" class="w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 theme-inner border-2 rounded-2xl flex items-center justify-center text-3xl sm:text-5xl lg:text-6xl font-bold shadow-xl">
+                        <!-- Dice & Control Panel (Optimized Layout for Mobile & Smartboards) -->
+                        <div class="flex flex-col items-center space-y-1.5 sm:space-y-4 my-auto">
+                            <div class="flex items-center justify-center gap-2 sm:gap-3">
+                                <div id="dice-display" class="w-11 h-11 sm:w-20 sm:h-20 lg:w-24 lg:h-24 theme-inner border-2 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-5xl lg:text-6xl font-bold shadow-xl">
                                     🎲
                                 </div>
                             </div>
 
-                            <div id="dice-result-text" class="text-xs sm:text-sm lg:text-base font-bold text-indigo-600 dark:text-indigo-300 text-center min-h-[24px]">
+                            <div id="dice-result-text" class="text-[11px] sm:text-sm lg:text-base font-bold text-indigo-600 dark:text-indigo-300 text-center min-h-[20px] px-1">
                                 Tekan tombol untuk melempar dadu!
                             </div>
 
-                            <button id="roll-btn" onclick="humanRollDice()" class="px-6 py-3 sm:px-10 sm:py-4 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:from-indigo-600 hover:to-pink-700 active:scale-95 text-white font-bold rounded-xl sm:rounded-2xl shadow-xl transition duration-200 flex items-center gap-2 text-sm sm:text-lg lg:text-xl pulse-glow">
-                                <i class="fa-solid fa-dice text-lg sm:text-2xl"></i> Lempar Dadu
+                            <button id="roll-btn" onclick="humanRollDice()" class="px-4 py-2 sm:px-10 sm:py-4 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:from-indigo-600 hover:to-pink-700 active:scale-95 text-white font-bold rounded-xl sm:rounded-2xl shadow-xl transition duration-200 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-lg lg:text-xl pulse-glow">
+                                <i class="fa-solid fa-dice text-sm sm:text-2xl"></i> Lempar Dadu
                             </button>
                         </div>
                     </div>
